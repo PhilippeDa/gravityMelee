@@ -1,0 +1,403 @@
+<html>
+
+<head>
+
+    <title>Gravity Melee</title>
+
+    <style type="text/css" media="screen">
+    	canvas, img { display:block; margin:1em auto; border:1px solid black;
+			position: absolute;top: 0;bottom: 0;left: 0;right: 0; padding:0; }
+	.div{bottom:7px;}
+    	canvas { background:url('client/space.jpg'); background-size: 100% 100% }
+	html, body {width:100%;height: 100%;margin: 0px;}
+    </style>
+	
+</head>
+<body bgcolor="black">
+	<div class='div' style="position:relative;"> 
+	<div class='div' id="yo"style="position:absolute;">
+	<canvas id="ctx" width="640" height="480" ></canvas>
+	<div class='buttoncontainer' style:"position:relative;">
+	<input type="text" value="In-space name" id="playerName" maxlength="13" size="15" style="position:absolute;"> 
+	<input type="button" value="PLAY" id="submit" onclick="submitName()" style="position:absolute;">
+	<input type="button" value="PLAY AGAIN" id="again" onclick="playAgain()" style="position:absolute; display:none;">
+	<input type="text" value="" maxlength="38" size="40" id="chat" style="position:absolute;">
+        </div>
+	</div>
+	</div>
+	<body style="overflow: hidden">
+<script src="/socket.io/socket.io.js"></script>
+<script>
+	window.addEventListener("keydown", function(e) {
+    	// space and arrow keys
+    		if([ 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+        		e.preventDefault();
+    		}
+	}, false);
+
+	var widthw = window.innerWidth-5;
+	var heightw = window.innerHeight-10;
+        canvas = document.getElementById("ctx");
+        if (canvas.width  < widthw){canvas.width  = widthw;}
+        if (canvas.height < heightw){canvas.height = heightw;}
+var textBox = document.getElementById("playerName");
+	textBox.style.left = (widthw/2-110)+'px';
+	textBox.style.top = (heightw/2-50)+'px';
+	var submitButton = document.getElementById("submit");
+	submitButton.style.left = (widthw/2+30)+'px';
+	submitButton.style.top = (heightw/2-49)+'px';	
+	var replayButton = document.getElementById("again");
+        replayButton.style.left = (widthw/2-50)+'px';
+        replayButton.style.top = (heightw/2+60)+'px';
+	var chatText = document.getElementById("chat");
+	chatText.style.left = 0;
+	chatText.style.top = heightw-8;
+        var gameState =0;	
+	var splash =new Image();
+	splash.src = '/client/splash.jpg';
+	var dead = new Image();
+	dead.src = '/client/dead.jpg';
+	var bullet = new Image();
+	bullet.src = '/client/bullet.png';
+	var sun = new Image();
+        sun.src = '/client/sun2.png';
+        var img = new Image();
+        img.src = '/client/ship.png';
+	bulletimg = new Image();
+	bulletimg.src = '/client/bulletimg.png';
+	var armor1 = new Image();
+	armor1.src = '/client/armor1.png';
+	var shield1 = new Image();
+	shield1.src = '/client/shield1.png';
+	var thrusterx4 = new Image();
+	thrusterx4.src = '/client/thrusterx4.png';
+	var thrusterx8 = new Image();
+	thrusterx8.src = '/client/thrusterx8.png';
+	var bullet100 = new Image();
+	var bullet10 = new Image();
+	bullet10.src = '/client/bullet10.png';
+	bullet100.src = '/client/bullet100.png';
+	var bullet200 = new Image();
+        bullet200.src = '/client/bullet200.png';
+	var bulletdmg10 = new Image();
+	bulletdmg10.src = '/client/bulletdmg10.png';
+	var bulletdmg15 = new Image();
+	bulletdmg15.src = '/client/bulletdmg15.png';
+	var repair200 = new Image();
+	var repair400 = new Image();
+	var repair1000 = new Image();
+	repair200.src = '/client/repair200.png';
+	repair400.src = '/client/repair400.png';
+	repair1000.src = '/client/repair1000.png';
+	var rf5 = new Image();
+	var rf75 = new Image();
+	rf5.src = '/client/rf5.png';
+	rf75.src = '/client/rf75.png';
+	var repair10 = new Image();
+	repair10.src = 'client/repair10.png';
+	var capa1 = new Image();
+        capa1.src = 'client/capa.png';
+	var ctx = document.getElementById("ctx").getContext("2d");
+	ctx.font='14px Arial';	
+	var socket = io();
+	var planets = [];
+	var rf5t = [];
+	var bulletdmg10t = [];
+	var bullets100t = [];
+	var thrusterx4t = [];
+	var life = [];
+	var repair10t = [];
+	var chat = [];
+	var shield1t = [];
+	var top5 = [];
+	var armor1t = [];
+	var capat = [];
+	var explosiont = [];
+	var cadre = {a:0,b:0,w:widthw,h:heightw};
+	var loaded=0;
+	life.push({mass:0.02,thruster:0.01,rof:40,damage:5,repair:0,bullets:100,tShield:40,shield:40,tArmor:25,armor:25,tCap:5,cap:5,x:0,y:0,id:0})
+	socket.on('newPos',function(data){
+                var x = life[0].x;
+                var y = life[0].y;
+		if(gameState==0){x=1250;y=937.5;}
+		if(loaded==0){cadre={a:x-(widthw/2),b:y-(heightw/2),w:widthw,h:heightw};}
+		loaded=1;
+		ctx.clearRect(0,0,widthw,heightw);
+		if(x-(cadre.w/5)<cadre.a){cadre.a=x-(cadre.w/5);}
+		else if(x+(cadre.w/5)>cadre.a+cadre.w){cadre.a=x-cadre.w+(cadre.w/5);}
+		if(y-(cadre.w/8)<cadre.b){cadre.b=y-(cadre.w/8);}
+		else if(y+(cadre.w/8)>cadre.b+cadre.h){cadre.b=y-cadre.h+(cadre.w/8);}
+		ctx.save();
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0-cadre.a-1000,0,1000,planets[0].sizey);
+                ctx.fillRect(planets[0].sizex-cadre.a,0,1000,planets[0].sizey);
+                ctx.fillRect(0,0-cadre.b-1000,planets[0].sizex,1000);
+                ctx.fillRect(0,planets[0].sizey-cadre.b,planets[0].sizex,1000);
+		for(var i in planets){
+			
+			ctx.beginPath();
+			ctx.fillStyle = planets[i].color;
+			ctx.arc((planets[i].x-cadre.a),(planets[i].y-cadre.b), Math.cbrt(planets[i].mass*25*2.356), 0, 2 * Math.PI);
+			ctx.fillStyle = planets[i].color;
+			ctx.fill();
+			ctx.stroke();
+			ctx.globalAlpha = 0.5;
+			var radius = Math.cbrt(planets[i].mass*25*2.356);
+                        ctx.drawImage(sun,(planets[i].x-radius-cadre.a),(planets[i].y-radius-cadre.b),radius*2,radius*2);
+			ctx.globalAlpha = 1.0;
+			ctx.fillStyle = 'black';
+			//ctx.fillText(planets[i].mass,planets[i].x,planets[i].y);
+		}
+		for(var i in rf5t){
+			ctx.drawImage(rf5,rf5t[i].x-cadre.a-13,rf5t[i].y-cadre.b-13,26,26);
+		}
+		for(var i in capat){
+                        ctx.drawImage(capa1,capat[i].x-cadre.a-13,capat[i].y-cadre.b-13,26,26);
+                }
+		for(var i in repair10t){
+                        ctx.drawImage(repair10,repair10t[i].x-cadre.a-13,repair10t[i].y-13-cadre.b,26,26);
+                }
+		for(var i in bulletdmg10t){
+			ctx.drawImage(bulletdmg10,bulletdmg10t[i].x-13-cadre.a,bulletdmg10t[i].y-13-cadre.b,26,26);
+		}
+		for(var i in armor1t){
+			ctx.drawImage(armor1,armor1t[i].x-13-cadre.a,armor1t[i].y-13-cadre.b,26,26);
+		}
+		for(var i in shield1t){
+                        ctx.drawImage(shield1,shield1t[i].x-13-cadre.a,shield1t[i].y-13-cadre.b,26,26);
+                }
+		for(var i in bullets100t){
+			ctx.drawImage(bullet100,bullets100t[i].x-13-cadre.a,bullets100t[i].y-13-cadre.b,26,26);
+		}
+		for(var i in thrusterx4t){	
+			ctx.drawImage(thrusterx4,thrusterx4t[i].x-13-cadre.a,thrusterx4t[i].y-13-cadre.b,26,26);
+		}
+		ctx.fillStyle = "rgba(0 ,0 ,0 , 0.6)";
+                ctx.fillRect(cadre.w-10-200,cadre.h-10-150,200,150);      
+		ctx.font='30px Arial';
+                for(var i in planets){
+                        ctx.fillStyle = planets[i].color;
+                        ctx.fillText(".",((planets[i].x/2500)*200)+(cadre.w-200-12),((planets[i].y/1875)*150)+(cadre.h-150-8));        
+                }
+		ctx.font = '14px Arial';
+                ctx.fillStyle = 'white';        
+                ctx.fillText("+",((x/2500)*200)+cadre.w-200-13,((y/1875)*150)+cadre.h-150-5);
+		ctx.save();
+		for(var i=chat.length-1;i>=0;i--){
+			var color = (0.15+(i*0.15));
+			ctx.fillStyle = "rgba(255,255,255,"+color+")";
+			ctx.fillText(chat[i],0,cadre.h-(90-(i*15)));
+	 	}	
+		ctx.restore();
+		for(var i =0; i < data.length; i++){
+			if(life[0].id==data[i].id){
+			ctx.save();
+			var largeur = 22+(4*Math.log(data[i].tArmor/25));
+			var hauteur = 26+(4.75*Math.log(data[i].tArmor/25));
+			ctx.translate(x-cadre.a, y-cadre.b);
+			ctx.rotate(data[i].angle);
+			//ctx.translate( -x, -.y);
+			ctx.drawImage( img,-(largeur/2),-(hauteur/2),largeur,hauteur );
+			ctx.restore();
+			ctx.fillStyle = "#5de0dd";
+                        ctx.fillRect(x-cadre.a-15,y-cadre.b-(hauteur/2+16),data[i].shield/data[i].tShield*30,6);
+                        ctx.fillStyle = "#9f8f71";
+                        ctx.fillRect(x-cadre.a-15,y-cadre.b-(hauteur/2+10),data[i].armor/data[i].tArmor*30,6);
+			ctx.save();
+			ctx.fillStyle = 'white';
+			ctx.font = '11px Lucida console';
+			ctx.fillText(data[i].namee,x-cadre.a-(3.5*data[i].namee.length),y-cadre.b-(hauteur/2+22));
+			ctx.restore();
+    			//ctx.drawImage(img,data[i].x,data[i].y,21,26);
+			//ctx.fillText(life[a].life,data[i].x,data[i].y);
+			for(var j in data[i].bullets){
+				ctx.fillStyle='red';
+				ctx.drawImage(bullet,data[i].bullets[j].x-2-cadre.a,data[i].bullets[j].y-2-cadre.b,4,4);
+			}
+			}
+			else{
+			ctx.save();
+                        var largeur = 22+(4*Math.log(data[i].tArmor/25));
+                        var hauteur = 26+(4.75*Math.log(data[i].tArmor/25));
+                        ctx.translate(data[i].x-cadre.a, data[i].y-cadre.b);
+                        ctx.rotate(data[i].angle);
+                        //ctx.translate( -x, -.y);
+                        ctx.drawImage( img,-(largeur/2),-(hauteur/2),largeur,hauteur );
+                        ctx.restore();
+                        ctx.fillStyle = "#5de0dd";
+                        ctx.fillRect(data[i].x-cadre.a-15,data[i].y-cadre.b-(hauteur/2+16),data[i].shield/data[i].tShield*30,6);
+                        ctx.fillStyle = "#9f8f71";
+                        ctx.fillRect(data[i].x-cadre.a-15,data[i].y-cadre.b-(hauteur/2+10),data[i].armor/data[i].tArmor*30,6);
+			ctx.save();
+                        ctx.fillStyle = 'white';
+                        ctx.font = '11px Lucida console';
+                        ctx.fillText(data[i].namee,data[i].x-cadre.a-(3.5*data[i].namee.length),data[i].y-cadre.b-(hauteur/2+22));
+                        ctx.restore();
+                        //ctx.drawImage(img,data[i].x,data[i].y,21,26);
+                        //ctx.fillText(life[a].life,data[i].x,data[i].y);
+                        for(var j in data[i].bullets){
+                                ctx.fillStyle='red';
+                                ctx.drawImage(bullet,data[i].bullets[j].x-2-cadre.a,data[i].bullets[j].y-2-cadre.b,4,4);
+                        }
+			}
+		}
+		for(var i in explosiont){
+			if(explosiont[i].life<6 && explosiont[i].life>0){
+                                ctx.globalAlpha = 0.5;
+                                ctx.beginPath();
+                                ctx.fillStyle = 'red';
+                                ctx.arc((explosiont[i].x-cadre.a),(explosiont[i].y-cadre.b), explosiont[i].radius/(5/explosiont[i].life), 0, 2 * Math.PI);
+                                ctx.fill();
+				ctx.globalAlpha=1.0;
+				explosiont[i].life-=1;
+			}
+                }
+                
+		for(var i in explosiont){
+			if(explosiont[i].life>3){
+				ctx.globalAlpha = 0.5;
+                        	ctx.drawImage(sun,(explosiont[i].x-explosiont[i].radius-cadre.a),(explosiont[i].y-explosiont[i].radius-cadre.b),explosiont[i].radius*2,explosiont[i].radius*2);
+                        	ctx.globalAlpha = 1.0;
+				explosiont[i].life-=1;
+			}
+		}		
+                for(var a in life){
+			ctx.fillStyle = 'white';
+                        ctx.drawImage(repair10,cadre.w/2-277,cadre.h-30,28,28);
+                        ctx.fillText(Math.round(life[a].repair),cadre.w/2-245,cadre.h-6);
+                        ctx.fillStyle = "#9f8f71";
+                        ctx.fillRect(cadre.w/2-200,cadre.h-25,life[a].armor/life[a].tArmor*185,25);
+
+			ctx.beginPath();
+		        ctx.moveTo(cadre.w/2,cadre.h-15);
+		        ctx.arc(cadre.w/2,cadre.h-15,15,0,(life[a].cap/life[a].tCap)*2*Math.PI);
+		        ctx.closePath();
+			if((life[a].cap/life[a].tCap)>0.5)ctx.fillStyle="#99ff46";
+		        else if((life[a].cap/life[a].tCap)>0.33)ctx.fillStyle='yellow';
+			else if((life[a].cap/life[a].tCap)>0.16)ctx.fillStyle='orange';
+			else ctx.fillStyle='red';
+		        ctx.fill();
+
+                        ctx.fillStyle = "#5de0dd";
+                        ctx.fillRect(cadre.w/2+15,cadre.h-25,life[a].shield/life[a].tShield*185,25);
+		        ctx.fillStyle = 'white';	
+			ctx.fillText("Mass: "+(Math.round(life[a].mass*1000)/1000),0,15);
+			ctx.fillText("Thruster: "+(Math.round(life[a].thruster*1000)/1000),0,30);
+			ctx.fillText("RoF: 1/"+(Math.round(life[a].rof*1000)/1000),0,45);
+			ctx.fillText("Damage per shot: "+Math.round(life[a].damage*1000)/1000,0,60);
+			ctx.fillText("Energy: "+Math.round(life[a].cap)+"/"+life[a].tCap,0,75);
+			ctx.fillText((Math.round(life[a].armor*10)/10)+"/"+life[a].tArmor,cadre.w/2-160,cadre.h-6);
+                        ctx.fillText((Math.round(life[a].shield*10)/10)+"/"+life[a].tShield,cadre.w/2+40,cadre.h-6);
+			ctx.fillText(life[a].bullets,cadre.w/2+220,cadre.h-6);
+                }
+		ctx.font='14px Arial';
+		for(var i in top5){
+			ctx.fillText("-- LEADERBOARD --",cadre.w-150,15);
+			if(top5[i].player!= ""){
+				var k=i;++k;
+				ctx.fillText(k+". "+top5[i].player,cadre.w-150,30+(i*15));			
+			}
+		}
+		if(gameState==0){
+			ctx.save();		
+			ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+			ctx.fillRect(0,0,cadre.w,cadre.h);
+                	ctx.restore();
+			ctx.drawImage(splash,cadre.w/2-(638/2),cadre.h/2-(451/2),638,451);
+		}
+		else if(gameState==2){
+			ctx.save();             
+                        ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+                        ctx.fillRect(0,0,cadre.w,cadre.h);
+                        ctx.restore();
+			ctx.drawImage(dead,cadre.w/2-(638/2),cadre.h/2-(451/2),638,451);
+		}
+                ctx.drawImage(bulletimg,cadre.w/2+210,cadre.h-29,8,28);
+	});
+	socket.on('chat',function(data){
+		for(var i in data){
+			chat[i]=data[i];
+		}
+	});
+	socket.on('explosion',function(data){
+		for(var i in data)explosiont[i]={x:data[i].x,y:data[i].y,radius:data[i].radius,life:10};
+	});
+	socket.on('armor1',function(data){
+		for(var i in data)armor1t[i]={x:data[i].x,y:data[i].y};
+	});
+	socket.on('capa',function(data){
+                for(var i in data)capat[i]={x:data[i].x,y:data[i].y};
+        });
+	socket.on('shield1',function(data){
+                for(var i in data)shield1t[i]={x:data[i].x,y:data[i].y};
+        });
+	socket.on('rf5',function(data){
+		for(var i in data)rf5t[i]={x:data[i].x,y:data[i].y};
+	});
+	socket.on('repair10',function(data){
+                for(var i in data)repair10t[i]={x:data[i].x,y:data[i].y};
+        });
+	socket.on('bulletdmg10',function(data){
+		for(var i in data)bulletdmg10t[i]={x:data[i].x,y:data[i].y};
+	});
+	socket.on('bullets100',function(data){
+		for(var i in data)bullets100t[i]={x:data[i].x,y:data[i].y};
+	});
+	socket.on('life',function(data){
+		for(var i in data)life[i]={mass:data[i].mass,thruster:data[i].thruster,rof:data[i].rof,damage:data[i].damage,repair:data[i].repair,bullets:data[i].bullets,tShield:data[i].tShield,shield:data[i].shield,tArmor:data[i].tArmor,armor:data[i].armor,tCap:data[i].tCap,cap:data[i].cap,x:data[i].x,y:data[i].y};
+	});
+	socket.on('thrusterx4',function(data){
+		for(var i in data)thrusterx4t[i]={x:data[i].x,y:data[i].y};
+	});
+	socket.on('planets',function(data){
+		for(var i = 0;i<data[0].nb; i++){
+			planets[i]={sizex:data[i].sizex,sizey:data[i].sizey,x:data[i].x,y:data[i].y,mass:data[i].mass,color:data[i].color};
+		}
+	});		
+	socket.on('top5',function(data){
+                for(var i in data)top5[i]={player:data[i].player,score:data[i].score};
+        });
+	socket.on('dead',function(){ 
+		gameState=2;
+		replayButton.style.display = "unset";
+	});
+	socket.on('play', function(){gameState=1;});
+	document.onkeydown = function(event){
+		if(event.keyCode === 37 && gameState==1) socket.emit('keyPress',{inputId:'left',state:true});
+		if(event.keyCode === 38 && gameState==1) socket.emit('keyPress',{inputId:'up',state:true});
+		if(event.keyCode === 39 && gameState==1) socket.emit('keyPress',{inputId:'right',state:true});
+		if(event.keyCode === 40 && gameState==1) socket.emit('keyPress',{inputId:'down',state:true});
+		if(event.keyCode === 90 && gameState==1) socket.emit('keyPress',{inputId:'fire',state:true});
+		if(event.keyCode === 65 && gameState==1) socket.emit('keyPress',{inputId:'repair',state:true});
+		if(event.keyCode === 88 && gameState==1) socket.emit('keyPress',{inputId:'explode',state:true});
+		if(event.keyCode === 13 && gameState==1){
+			if( document.getElementById("chat").value != ""){
+				 socket.emit('chat', document.getElementById("chat").value);
+				 document.getElementById("chat").value = "";
+			}
+		}
+	}
+	
+	document.onkeyup = function(event){
+                if(event.keyCode === 37 && gameState==1) socket.emit('keyPress',{inputId:'left',state:false});
+                if(event.keyCode === 38 && gameState==1) socket.emit('keyPress',{inputId:'up',state:false});
+                if(event.keyCode === 39 && gameState==1) socket.emit('keyPress',{inputId:'right',state:false});
+                if(event.keyCode === 40 && gameState==1) socket.emit('keyPress',{inputId:'down',state:false});
+		if(event.keyCode === 90 && gameState==1) socket.emit('keyPress',{inputId:'fire',state:false});
+		if(event.keyCode === 65 && gameState==1) socket.emit('keyPress',{inputId:'repair',state:false});
+		if(event.keyCode === 88 && gameState==1) socket.emit('keyPress',{inputId:'explode',state:false});
+        }
+	var submitName = function(){
+		if(document.getElementById("playerName").value != "" && gameState==0){
+			document.getElementById("submit").style.display = 'none';
+			document.getElementById("playerName").style.display = 'none';
+			socket.emit('namee',document.getElementById("playerName").value);}
+	}
+	var playAgain = function(){
+		socket.emit('deleteSocket');
+		location.reload();
+		replayButton.style.display = "none";	
+	}
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+written using 8.x, working in node 10.X might no work on later version you can try reverting to an older version if some issues occur
+
+how to run this thing?
+1) install node globally
+2) cd to wher app.js is, and $>npm install
+3) $> node app.js or $> node cluster.js
